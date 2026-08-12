@@ -191,12 +191,10 @@ res = (SCREEN_WIDTH, SCREEN_HEIGHT)
 
 def random_f_key_interval() -> float:
     """
-    Return a random interval between F key presses using original timing.
-    Most of the time: 0.12-0.18 seconds
-    Sometimes (1 in 6 chance): 0.18-0.2 seconds for variation
-    :return: A random interval in seconds (same as original script)
+    Return a random interval mimicking human rapid key presses (5-8 clicks/presses per second).
+    Interval range: 0.125 - 0.200 seconds.
     """
-    return uniform(0.18, 0.2) if randint(1, 6) == 6 else uniform(0.12, 0.18)
+    return uniform(0.125, 0.200)
 
 
 def should_take_break() -> bool:
@@ -269,26 +267,26 @@ def main() -> None:
         title = getActiveWindowTitle()
         return bool(title == "Genshin Impact")
 
-    def is_dialogue_playing() -> tuple[bool, bool]:
-        """Check if dialogue is currently playing (autoplay button visible)."""
+    def get_dialogue_state() -> tuple[bool, bool]:
+        """
+        Check dialogue state in a single fast screenshot pass.
+        Returns: (dialogue_active: bool, options_available: bool)
+        """
         try:
-            current_pixel = pixel(get_pixel(DEVICE, res, "PLAYING_ICON_X"), get_pixel(DEVICE, res, "PLAYING_ICON_Y"))
-            return bool(current_pixel == (236, 229, 216)), False
-        except Exception:
-            return False, False
+            # 1. Check if dialogue playing (autoplay icon color)
+            playing_pixel = pixel(get_pixel(DEVICE, res, "PLAYING_ICON_X"), get_pixel(DEVICE, res, "PLAYING_ICON_Y"))
+            if playing_pixel == (236, 229, 216):
+                return True, False
 
-    def is_dialogue_option_available() -> tuple[bool, bool]:
-        """Check if dialogue options are available."""
-        try:
-            # Confirm loading screen is not white
+            # 2. Confirm loading screen is not white
             if pixel(get_pixel(DEVICE, res, "LOADING_SCREEN_X"), get_pixel(DEVICE, res, "LOADING_SCREEN_Y")) == (255, 255, 255):
                 return False, False
 
-            # Check if lower dialogue icon pixel is white
+            # 3. Check lower dialogue option icon
             if pixel(get_pixel(DEVICE, res, "DIALOGUE_ICON_X"), get_pixel(DEVICE, res, "DIALOGUE_ICON_LOWER_Y")) == (255, 255, 255):
                 return True, True
 
-            # Check if higher dialogue icon pixel is white
+            # 4. Check higher dialogue option icon
             if pixel(get_pixel(DEVICE, res, "DIALOGUE_ICON_X"), get_pixel(DEVICE, res, "DIALOGUE_ICON_HIGHER_Y")) == (255, 255, 255):
                 return True, True
 
@@ -341,12 +339,11 @@ def main() -> None:
             print("  [SMART AUTO-RESUME] Genshin Impact window focused. Auto-skip resumed.")
             was_active = True
 
-        # Check if dialogue is active (either playing or options available)
-        dialogue_active = is_dialogue_playing()[0] or is_dialogue_option_available()[0]
-        options_available = is_dialogue_option_available()[1]
+        # Check dialogue state in a single pass
+        dialogue_active, options_available = get_dialogue_state()
 
         if not dialogue_active:
-            sleep(0.1)
+            sleep(0.02)
             continue
 
         # Check if it's time for an occasional break
@@ -375,7 +372,7 @@ def main() -> None:
             next_f_interval = random_f_key_interval()
 
         # Small sleep to prevent excessive CPU usage
-        sleep(0.05)
+        sleep(0.01)
 
 
 if __name__ == "__main__":

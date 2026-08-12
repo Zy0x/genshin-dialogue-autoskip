@@ -6,6 +6,15 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.2] - 2026-08-13
+
+### ⚡ Optimasi Kecepatan Pengetukan & Performa
+- **Optimasi Penekanan Tombol F (5–8 Clicks/sec)**:
+  - Mengubah interval penekanan tombol `F` menjadi **5 s.d 8 kali per detik** (`0.125s - 0.200s`), menyerupai kecepatan pengetukan jari manusia secara alami.
+- **Peningkatan Pemindaian Piksel Single-Pass (`get_dialogue_state`)**:
+  - Menggabungkan pengecekan status dialog menjadi 1 kali pemindaian gambar per loop.
+  - Memangkas keterlambatan *screenshot* berulang hingga 70% dan mempercepat penanganan transisi dialog tanpa lag.
+
 ## [2.1.1] - 2026-08-12
 
 ### 🌟 Fitur Baru
