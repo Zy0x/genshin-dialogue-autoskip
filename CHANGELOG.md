@@ -6,6 +6,13 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.4] - 2026-08-13
+
+### 🌟 Fitur Baru & Deteksi Objek Simbol Diamond Kuning
+- **Pendeteksian Khusus Objek Simbol Diamond Kuning (`◇` / `◆`)**:
+  - Mengubah logika pendeteksian agar berfokus 100% pada pemindaian **simbol diamond kuning/emas** yang sering muncul di bagian bawah tengah layar pada berbagai adegan sinematik, dialog, dan narasi.
+  - Menerapkan *Multi-Point Vertical Scan Array* pada rentang `Y = 910, 925, 940, 950, 960` dengan toleransi warna emas `R >= 170`, `G >= 120`, `B <= 110`.
+
 ## [2.1.3] - 2026-08-13
 
 ### 🌟 Fitur Baru & Peningkatan Kecepatan

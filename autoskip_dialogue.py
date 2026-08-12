@@ -15,7 +15,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.3 | Keyboard & Mouse Edition")
+print("  Version 2.1.4 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -143,17 +143,6 @@ if os.environ.get("WIDTH", "") == "" or os.environ.get("HEIGHT", "") == "" or os
 
     print(f"  Resolution: {SCREEN_WIDTH}x{SCREEN_HEIGHT}\n")
 
-    #while True:
-    #    temp_conf_device = str(input("Select device!\n1: Mouse and keyboard\n2: gamepad (xbox, dualshock) UNDER DEVELOPMENT\nEnter the number of your chosen device type: "))
-    #    if temp_conf_device == "1":
-    #        DEVICE = "mnk"
-    #        break
-    #    elif temp_conf_device == "2":
-    #        DEVICE = "gamepad"
-    #        break
-    #    else:
-    #        print("Incorrect format. Make sure it's only 1 character.")
-
     while True:
         temp_conf_btn = str(input("Enter your in game interaction key (f.e: F):"))
         if len(temp_conf_btn) == 1:
@@ -202,9 +191,9 @@ def random_f_key_interval() -> float:
 
 
 def is_yellow_color(color: tuple[int, int, int]) -> bool:
-    """Check if RGB color matches yellow/gold indicator ('Tekan untuk melanjutkan')."""
+    """Check if RGB color matches the yellow/gold diamond indicator ('◇' / '◆')."""
     r, g, b = color[0], color[1], color[2]
-    return bool(r > 190 and g > 140 and b < 100)
+    return bool(r >= 170 and g >= 120 and b <= 110 and r > g)
 
 
 def should_take_break() -> bool:
@@ -280,7 +269,7 @@ def main() -> None:
     def get_dialogue_state() -> tuple[bool, bool]:
         """
         Check dialogue state in a single fast screenshot pass.
-        Includes black screen narration detection ("Tekan untuk melanjutkan").
+        Includes yellow diamond symbol ('◇' / '◆') multi-point vertical scan.
         Returns: (dialogue_active: bool, options_available: bool)
         """
         try:
@@ -301,14 +290,18 @@ def main() -> None:
             if pixel(get_pixel(DEVICE, res, "DIALOGUE_ICON_X"), get_pixel(DEVICE, res, "DIALOGUE_ICON_HIGHER_Y")) == (255, 255, 255):
                 return True, True
 
-            # 5. Check yellow 'Tekan untuk melanjutkan' indicator/text (black screen narration)
-            yellow_icon_pixel = pixel(get_pixel(DEVICE, res, "YELLOW_INDICATOR_X"), get_pixel(DEVICE, res, "YELLOW_INDICATOR_Y"))
-            if is_yellow_color(yellow_icon_pixel):
-                return True, False
-
-            yellow_text_pixel = pixel(get_pixel(DEVICE, res, "YELLOW_INDICATOR_X"), get_pixel(DEVICE, res, "YELLOW_TEXT_Y"))
-            if is_yellow_color(yellow_text_pixel):
-                return True, False
+            # 5. Check Yellow Diamond Symbol ('◇' / '◆') at bottom-center vertical scan points
+            center_x = width_adjust(960)
+            y_scan_points = [
+                height_adjust(910),
+                height_adjust(925),
+                height_adjust(940),
+                height_adjust(950),
+                height_adjust(960)
+            ]
+            for y_pt in y_scan_points:
+                if is_yellow_color(pixel(center_x, y_pt)):
+                    return True, False
 
             return False, False
         except Exception:
