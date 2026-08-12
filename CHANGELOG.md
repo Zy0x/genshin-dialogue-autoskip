@@ -6,6 +6,16 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.5] - 2026-08-13
+
+### 🌟 Fitur Baru — Deteksi Multi-Indikator Dialog Karakter
+- **Deteksi Nama Karakter Kuning/Emas** (`CHAR_NAME_X/Y`):
+  - Memindai strip horizontal sekitar area nama karakter di bagian bawah tengah layar (`Y ≈ 435`).
+  - Mendeteksi warna kuning/emas teks nama karakter (seperti *"Alyosha"*, *"Lumine"*, dll) yang hanya muncul saat dialog karakter aktif.
+- **Deteksi Kotak Tombol `[F]` di Kanan Tengah** (`F_KEY_BOX_X/Y`):
+  - Memindai strip vertikal di sekitar `X ≈ 1280, Y ≈ 400` untuk warna putih/abu-abu terang dari kotak UI tombol `[F]` yang muncul saat giliran interaksi dialog.
+  - Fungsi pembantu baru `is_light_grey_or_white()` untuk mengenali warna background kotak tombol.
+
 ## [2.1.4] - 2026-08-13
 
 ### 🌟 Fitur Baru & Deteksi Objek Simbol Diamond Kuning

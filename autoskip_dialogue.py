@@ -15,7 +15,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.4 | Keyboard & Mouse Edition")
+print("  Version 2.1.5 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -37,7 +37,13 @@ COORDS = {
 
             "YELLOW_INDICATOR_X": ("width_adjust", 960),
             "YELLOW_INDICATOR_Y": ("height_adjust", 945),
-            "YELLOW_TEXT_Y": ("height_adjust", 900)
+            "YELLOW_TEXT_Y": ("height_adjust", 900),
+
+            "CHAR_NAME_X": ("width_adjust", 960),
+            "CHAR_NAME_Y": ("height_adjust", 435),
+
+            "F_KEY_BOX_X": ("width_adjust", 1280),
+            "F_KEY_BOX_Y": ("height_adjust", 400)
         },
         "wide_screen": {
             "PLAYING_ICON_X": ("get_position_left", 84, 230),
@@ -191,9 +197,15 @@ def random_f_key_interval() -> float:
 
 
 def is_yellow_color(color: tuple[int, int, int]) -> bool:
-    """Check if RGB color matches the yellow/gold diamond indicator ('◇' / '◆')."""
+    """Check if RGB color matches the yellow/gold diamond indicator ('◇' / '◆') or character name."""
     r, g, b = color[0], color[1], color[2]
     return bool(r >= 170 and g >= 120 and b <= 110 and r > g)
+
+
+def is_light_grey_or_white(color: tuple[int, int, int]) -> bool:
+    """Check if RGB color matches the F-key box UI element (light grey/white box background)."""
+    r, g, b = color[0], color[1], color[2]
+    return bool(r >= 210 and g >= 210 and b >= 210 and abs(int(r) - int(g)) <= 20 and abs(int(g) - int(b)) <= 20)
 
 
 def should_take_break() -> bool:
@@ -301,6 +313,22 @@ def main() -> None:
             ]
             for y_pt in y_scan_points:
                 if is_yellow_color(pixel(center_x, y_pt)):
+                    return True, False
+
+            # 6. Check yellow character name text at bottom-center (e.g. 'Alyosha', 'Lumine')
+            #    Scans a small horizontal strip around where character name appears
+            char_name_x = get_pixel(DEVICE, res, "CHAR_NAME_X")
+            char_name_y = get_pixel(DEVICE, res, "CHAR_NAME_Y")
+            for x_offset in range(-60, 61, 20):
+                if is_yellow_color(pixel(char_name_x + x_offset, char_name_y)):
+                    return True, False
+
+            # 7. Check F-key box indicator (light-grey box on the right side during dialogue)
+            #    Scans a vertical strip on the right-center where the [F] key box appears
+            f_box_x = get_pixel(DEVICE, res, "F_KEY_BOX_X")
+            f_box_y = get_pixel(DEVICE, res, "F_KEY_BOX_Y")
+            for y_offset in range(-30, 31, 10):
+                if is_light_grey_or_white(pixel(f_box_x, f_box_y + y_offset)):
                     return True, False
 
             return False, False
