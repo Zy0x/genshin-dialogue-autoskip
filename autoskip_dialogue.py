@@ -15,7 +15,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.1 | Keyboard & Mouse Edition")
+print("  Version 2.1.3 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -33,7 +33,11 @@ COORDS = {
             "DIALOGUE_ICON_HIGHER_Y": ("height_adjust", 790),
 
             "LOADING_SCREEN_X": ("width_adjust", 1200),
-            "LOADING_SCREEN_Y": ("height_adjust", 700)
+            "LOADING_SCREEN_Y": ("height_adjust", 700),
+
+            "YELLOW_INDICATOR_X": ("width_adjust", 960),
+            "YELLOW_INDICATOR_Y": ("height_adjust", 945),
+            "YELLOW_TEXT_Y": ("height_adjust", 900)
         },
         "wide_screen": {
             "PLAYING_ICON_X": ("get_position_left", 84, 230),
@@ -191,10 +195,16 @@ res = (SCREEN_WIDTH, SCREEN_HEIGHT)
 
 def random_f_key_interval() -> float:
     """
-    Return a random interval mimicking human rapid key presses (5-8 clicks/presses per second).
-    Interval range: 0.125 - 0.200 seconds.
+    Return a random interval mimicking human rapid key presses (8-12 clicks/presses per second).
+    Interval range: 0.080 - 0.125 seconds.
     """
-    return uniform(0.125, 0.200)
+    return uniform(0.080, 0.125)
+
+
+def is_yellow_color(color: tuple[int, int, int]) -> bool:
+    """Check if RGB color matches yellow/gold indicator ('Tekan untuk melanjutkan')."""
+    r, g, b = color[0], color[1], color[2]
+    return bool(r > 190 and g > 140 and b < 100)
 
 
 def should_take_break() -> bool:
@@ -270,6 +280,7 @@ def main() -> None:
     def get_dialogue_state() -> tuple[bool, bool]:
         """
         Check dialogue state in a single fast screenshot pass.
+        Includes black screen narration detection ("Tekan untuk melanjutkan").
         Returns: (dialogue_active: bool, options_available: bool)
         """
         try:
@@ -289,6 +300,15 @@ def main() -> None:
             # 4. Check higher dialogue option icon
             if pixel(get_pixel(DEVICE, res, "DIALOGUE_ICON_X"), get_pixel(DEVICE, res, "DIALOGUE_ICON_HIGHER_Y")) == (255, 255, 255):
                 return True, True
+
+            # 5. Check yellow 'Tekan untuk melanjutkan' indicator/text (black screen narration)
+            yellow_icon_pixel = pixel(get_pixel(DEVICE, res, "YELLOW_INDICATOR_X"), get_pixel(DEVICE, res, "YELLOW_INDICATOR_Y"))
+            if is_yellow_color(yellow_icon_pixel):
+                return True, False
+
+            yellow_text_pixel = pixel(get_pixel(DEVICE, res, "YELLOW_INDICATOR_X"), get_pixel(DEVICE, res, "YELLOW_TEXT_Y"))
+            if is_yellow_color(yellow_text_pixel):
+                return True, False
 
             return False, False
         except Exception:

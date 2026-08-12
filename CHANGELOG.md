@@ -6,6 +6,15 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.3] - 2026-08-13
+
+### 🌟 Fitur Baru & Peningkatan Kecepatan
+- **Pendeteksian Layar Narasi Hitam (*"Tekan untuk melanjutkan"*)**:
+  - Menambahkan koordinat `YELLOW_INDICATOR_X` dan `YELLOW_INDICATOR_Y` untuk mendeteksi warna kuning/emas dari simbol diamond & teks pada layar narasi hitam.
+  - Memungkinkan skrip melompati layar narasi cerita latar hitam secara otomatis.
+- **Peningkatan Kecepatan Penekanan F (8–12 Clicks/sec)**:
+  - Mengatur interval penekanan tombol `F` ke **8 s.d 12 kali per detik** (`0.080s - 0.125s`), memberikan respon cepat yang mulus saat men-skip dialog.
+
 ## [2.1.2] - 2026-08-13
 
 ### ⚡ Optimasi Kecepatan Pengetukan & Performa
