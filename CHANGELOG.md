@@ -6,6 +6,13 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.8] - 2026-08-15
+
+### 🛡️ Anti-False Positive Shield (Menu/Inventori/Modal Popup Protection)
+- **Verifikasi Kontras Gelembung Pilihan Dialog (*Dark Pill Contrast Check*)**:
+  - Menambahkan fungsi validasi `is_valid_dialogue_choice()` yang memeriksa apakah icon putih pilihan dialog berada di atas bar pil gelap (`RGB < 130`).
+  - Mencegah salah deteksi (*false positive*) dan penekanan tombol `F` yang tidak diinginkan pada popup modal inventori/penyimpanan item/toko yang berlatar belakang krem/putih terang.
+
 ## [2.1.7] - 2026-08-15
 
 ### ⚡ Peningkatan Kecepatan Deteksi Fokus Jendela (Ultra-Fast Win32)

@@ -16,7 +16,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.7 | Keyboard & Mouse Edition")
+print("  Version 2.1.8 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -214,6 +214,32 @@ def is_light_grey_or_white(color: tuple[int, int, int]) -> bool:
     return bool(r >= 210 and g >= 210 and b >= 210 and abs(int(r) - int(g)) <= 20 and abs(int(g) - int(b)) <= 20)
 
 
+def is_valid_dialogue_choice(choice_x: int, y_pt: int) -> bool:
+    """
+    Validates that a white pixel at choice_x is a true dialogue pill option,
+    and NOT a light-colored modal popup or menu background (Anti-False Positive).
+    """
+    try:
+        # 1. Check if the icon pixel is white/light-grey
+        icon_pixel = pixel(choice_x, y_pt)
+        if not is_light_grey_or_white(icon_pixel):
+            return False
+
+        # 2. Check adjacent pill background pixel (35px to the right)
+        # In a true dialogue choice, the pill background is dark translucent (RGB < 130).
+        # In a modal popup or inventory parchment, the entire background is solid light/white (RGB > 160).
+        bg_pixel = pixel(choice_x + width_adjust(35), y_pt)
+        r, g, b = bg_pixel[0], bg_pixel[1], bg_pixel[2]
+
+        # If the adjacent background is ALSO light/white, it is a modal/menu popup, NOT a dialogue choice!
+        if r > 160 and g > 160 and b > 160:
+            return False
+
+        return True
+    except Exception:
+        return False
+
+
 def should_take_break() -> bool:
     """
     Determine if we should take an occasional break.
@@ -304,7 +330,7 @@ def main() -> None:
                 return False, False
 
             # 2. Check Right-Side Dialogue Choice Options (Speech bubble 💬 & [F] box)
-            #    Scans vertical range covering 1-choice (Y≈750), 2-choices (Y≈750, 808), and 3-choices (Y≈710, 770, 830)
+            #    Scans vertical range with Dark Pill Contrast Check to reject modal/menu popups
             choice_x = get_pixel(DEVICE, res, "DIALOGUE_CHOICE_X")
             f_box_x = get_pixel(DEVICE, res, "DIALOGUE_F_BOX_X")
             choice_y_points = [
@@ -317,7 +343,7 @@ def main() -> None:
                 height_adjust(830)
             ]
             for y_pt in choice_y_points:
-                if is_light_grey_or_white(pixel(choice_x, y_pt)) or is_light_grey_or_white(pixel(f_box_x, y_pt)):
+                if is_valid_dialogue_choice(choice_x, y_pt) or is_valid_dialogue_choice(f_box_x, y_pt):
                     return True, True
 
             # 3. Check Top-Left Permanent Dialogue Control Bar Icons (Log ≡, Hide UI 👁️, Audio 🔊, Autoplay)
