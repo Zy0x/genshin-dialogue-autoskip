@@ -6,6 +6,15 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.7] - 2026-08-15
+
+### ⚡ Peningkatan Kecepatan Deteksi Fokus Jendela (Ultra-Fast Win32)
+- **Direct Native Win32 API Window Detection**:
+  - Mengganti wrapper judul jendela dengan panggilan kernel langsung `win32gui.GetWindowText(win32gui.GetForegroundWindow())` (latensi < 1 milidetik).
+- **Peningkatan Frekuensi Polling Fokus (30ms Polling)**:
+  - Memangkas delay tidur saat jendela tidak aktif dari `500ms` menjadi **`30ms`**.
+  - Memberikan respon seketika (*instant/real-time*) saat pengguna berpindah ke browser (`[SMART AUTO-PAUSE]`) maupun saat kembali ke Genshin Impact (`[SMART AUTO-RESUME]`).
+
 ## [2.1.6] - 2026-08-15
 
 ### 🌟 Penyempurnaan Robust UI Detection (Elemen UI Permanen)

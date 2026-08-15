@@ -4,8 +4,9 @@ from threading import Thread
 from time import perf_counter, sleep
 from typing import Union
 from win32api import GetSystemMetrics  # type: ignore[import-untyped]
+import win32gui  # type: ignore[import-untyped]
 
-from pyautogui import getActiveWindowTitle, press, pixel  # type: ignore[import-untyped]
+from pyautogui import press, pixel  # type: ignore[import-untyped]
 from pynput.keyboard import Key, KeyCode, Listener  # type: ignore[import-untyped]
 from dotenv import find_dotenv, load_dotenv, set_key  # type: ignore[import-not-found]
 
@@ -15,7 +16,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.6 | Keyboard & Mouse Edition")
+print("  Version 2.1.7 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -279,9 +280,12 @@ def main() -> None:
     """
 
     def is_genshin_impact_active() -> bool:
-        """Check if Genshin Impact is the active window."""
-        title = getActiveWindowTitle()
-        return bool(title == "Genshin Impact")
+        """Check if Genshin Impact is the active window using native Win32 API (ultra-fast)."""
+        try:
+            hwnd = win32gui.GetForegroundWindow()
+            return win32gui.GetWindowText(hwnd) == "Genshin Impact"
+        except Exception:
+            return False
 
     def get_dialogue_state() -> tuple[bool, bool]:
         """
@@ -381,7 +385,7 @@ def main() -> None:
 
         # Handle pause state
         while main_status.status == "pause":
-            sleep(0.5)
+            sleep(0.05)
             current_time = perf_counter()  # Update time after pause
             last_f_press = current_time  # Reset timing after pause
             was_active = True
@@ -390,12 +394,12 @@ def main() -> None:
         if main_status.status == "exit":
             break
 
-        # Smart Auto-Pause: Only proceed if Genshin Impact is active
+        # Smart Auto-Pause: Only proceed if Genshin Impact is active (ultra-fast 30ms polling)
         if not is_genshin_impact_active():
             if was_active:
                 print("  [SMART AUTO-PAUSE] Genshin Impact window lost focus. Auto-skip suspended.")
                 was_active = False
-            sleep(0.5)
+            sleep(0.03)
             continue
         elif not was_active:
             print("  [SMART AUTO-RESUME] Genshin Impact window focused. Auto-skip resumed.")
