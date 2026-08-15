@@ -15,7 +15,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.5 | Keyboard & Mouse Edition")
+print("  Version 2.1.6 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -25,25 +25,30 @@ COORDS = {
     },
     "mnk": {
         "default": {
-            "PLAYING_ICON_X": ("width_adjust", 84),
-            "PLAYING_ICON_Y": ("height_adjust", 46),
-
-            "DIALOGUE_ICON_X": ("width_adjust", 1301),
-            "DIALOGUE_ICON_LOWER_Y": ("height_adjust", 808),
-            "DIALOGUE_ICON_HIGHER_Y": ("height_adjust", 790),
-
             "LOADING_SCREEN_X": ("width_adjust", 1200),
             "LOADING_SCREEN_Y": ("height_adjust", 700),
 
-            "YELLOW_INDICATOR_X": ("width_adjust", 960),
-            "YELLOW_INDICATOR_Y": ("height_adjust", 945),
-            "YELLOW_TEXT_Y": ("height_adjust", 900),
+            # Top-Left Permanent Dialogue Control Bar (Log, Hide UI, Audio, Autoplay)
+            "PLAYING_ICON_X": ("width_adjust", 84),
+            "PLAYING_ICON_Y": ("height_adjust", 46),
+            "LOG_ICON_X": ("width_adjust", 140),
+            "LOG_ICON_Y": ("height_adjust", 45),
+            "HIDE_UI_ICON_X": ("width_adjust", 180),
+            "HIDE_UI_ICON_Y": ("height_adjust", 45),
+            "AUDIO_ICON_X": ("width_adjust", 218),
+            "AUDIO_ICON_Y": ("height_adjust", 45),
 
+            # Right-Side Dialogue Choice Options (Speech bubble 💬 & [F] box)
+            "DIALOGUE_CHOICE_X": ("width_adjust", 1285),
+            "DIALOGUE_F_BOX_X": ("width_adjust", 1235),
+
+            # Bottom Dialogue Name & Golden Divider
             "CHAR_NAME_X": ("width_adjust", 960),
-            "CHAR_NAME_Y": ("height_adjust", 435),
+            "CHAR_NAME_Y": ("height_adjust", 810),
+            "GOLDEN_DIVIDER_Y": ("height_adjust", 835),
 
-            "F_KEY_BOX_X": ("width_adjust", 1280),
-            "F_KEY_BOX_Y": ("height_adjust", 400)
+            # Bottom-Center Yellow Diamond Indicator (Cutscenes & Narrations)
+            "YELLOW_INDICATOR_X": ("width_adjust", 960)
         },
         "wide_screen": {
             "PLAYING_ICON_X": ("get_position_left", 84, 230),
@@ -280,30 +285,62 @@ def main() -> None:
 
     def get_dialogue_state() -> tuple[bool, bool]:
         """
-        Check dialogue state in a single fast screenshot pass.
-        Includes yellow diamond symbol ('◇' / '◆') multi-point vertical scan.
+        Check dialogue state in a fast screenshot pass using PERMANENT UI elements.
+        Detects:
+          1. Loading Screen (Safety protection)
+          2. Right-side dialogue choice options (multi-point vertical scan covering 1, 2, 3 options)
+          3. Top-left permanent control bar (Autoplay, Log ≡, Hide UI 👁️, Audio 🔊)
+          4. Bottom character name & golden divider line (Y ≈ 810-835)
+          5. Bottom-center yellow diamond symbol (◇ / ◆, Y ≈ 910-960)
         Returns: (dialogue_active: bool, options_available: bool)
         """
         try:
-            # 1. Check if dialogue playing (autoplay icon color)
-            playing_pixel = pixel(get_pixel(DEVICE, res, "PLAYING_ICON_X"), get_pixel(DEVICE, res, "PLAYING_ICON_Y"))
-            if playing_pixel == (236, 229, 216):
-                return True, False
-
-            # 2. Confirm loading screen is not white
+            # 1. Confirm loading screen is not white (Safety)
             if pixel(get_pixel(DEVICE, res, "LOADING_SCREEN_X"), get_pixel(DEVICE, res, "LOADING_SCREEN_Y")) == (255, 255, 255):
                 return False, False
 
-            # 3. Check lower dialogue option icon
-            if pixel(get_pixel(DEVICE, res, "DIALOGUE_ICON_X"), get_pixel(DEVICE, res, "DIALOGUE_ICON_LOWER_Y")) == (255, 255, 255):
-                return True, True
+            # 2. Check Right-Side Dialogue Choice Options (Speech bubble 💬 & [F] box)
+            #    Scans vertical range covering 1-choice (Y≈750), 2-choices (Y≈750, 808), and 3-choices (Y≈710, 770, 830)
+            choice_x = get_pixel(DEVICE, res, "DIALOGUE_CHOICE_X")
+            f_box_x = get_pixel(DEVICE, res, "DIALOGUE_F_BOX_X")
+            choice_y_points = [
+                height_adjust(710),
+                height_adjust(735),
+                height_adjust(750),
+                height_adjust(770),
+                height_adjust(790),
+                height_adjust(808),
+                height_adjust(830)
+            ]
+            for y_pt in choice_y_points:
+                if is_light_grey_or_white(pixel(choice_x, y_pt)) or is_light_grey_or_white(pixel(f_box_x, y_pt)):
+                    return True, True
 
-            # 4. Check higher dialogue option icon
-            if pixel(get_pixel(DEVICE, res, "DIALOGUE_ICON_X"), get_pixel(DEVICE, res, "DIALOGUE_ICON_HIGHER_Y")) == (255, 255, 255):
-                return True, True
+            # 3. Check Top-Left Permanent Dialogue Control Bar Icons (Log ≡, Hide UI 👁️, Audio 🔊, Autoplay)
+            log_x = get_pixel(DEVICE, res, "LOG_ICON_X")
+            log_y = get_pixel(DEVICE, res, "LOG_ICON_Y")
+            hide_x = get_pixel(DEVICE, res, "HIDE_UI_ICON_X")
+            hide_y = get_pixel(DEVICE, res, "HIDE_UI_ICON_Y")
+            audio_x = get_pixel(DEVICE, res, "AUDIO_ICON_X")
+            audio_y = get_pixel(DEVICE, res, "AUDIO_ICON_Y")
+            playing_x = get_pixel(DEVICE, res, "PLAYING_ICON_X")
+            playing_y = get_pixel(DEVICE, res, "PLAYING_ICON_Y")
 
-            # 5. Check Yellow Diamond Symbol ('◇' / '◆') at bottom-center vertical scan points
-            center_x = width_adjust(960)
+            if is_light_grey_or_white(pixel(log_x, log_y)) or is_light_grey_or_white(pixel(hide_x, hide_y)) or is_light_grey_or_white(pixel(audio_x, audio_y)):
+                return True, False
+            if pixel(playing_x, playing_y) == (236, 229, 216):
+                return True, False
+
+            # 4. Check Bottom Character Name & Golden Divider Line (Y ≈ 810 - 835)
+            char_name_x = get_pixel(DEVICE, res, "CHAR_NAME_X")
+            char_name_y = get_pixel(DEVICE, res, "CHAR_NAME_Y")
+            divider_y = get_pixel(DEVICE, res, "GOLDEN_DIVIDER_Y")
+            for x_offset in range(-60, 61, 20):
+                if is_yellow_color(pixel(char_name_x + x_offset, char_name_y)) or is_yellow_color(pixel(char_name_x + x_offset, divider_y)):
+                    return True, False
+
+            # 5. Check Yellow Diamond Symbol ('◇' / '◆') at bottom-center (Cutscenes & Narrations)
+            center_x = get_pixel(DEVICE, res, "YELLOW_INDICATOR_X")
             y_scan_points = [
                 height_adjust(910),
                 height_adjust(925),
@@ -313,22 +350,6 @@ def main() -> None:
             ]
             for y_pt in y_scan_points:
                 if is_yellow_color(pixel(center_x, y_pt)):
-                    return True, False
-
-            # 6. Check yellow character name text at bottom-center (e.g. 'Alyosha', 'Lumine')
-            #    Scans a small horizontal strip around where character name appears
-            char_name_x = get_pixel(DEVICE, res, "CHAR_NAME_X")
-            char_name_y = get_pixel(DEVICE, res, "CHAR_NAME_Y")
-            for x_offset in range(-60, 61, 20):
-                if is_yellow_color(pixel(char_name_x + x_offset, char_name_y)):
-                    return True, False
-
-            # 7. Check F-key box indicator (light-grey box on the right side during dialogue)
-            #    Scans a vertical strip on the right-center where the [F] key box appears
-            f_box_x = get_pixel(DEVICE, res, "F_KEY_BOX_X")
-            f_box_y = get_pixel(DEVICE, res, "F_KEY_BOX_Y")
-            for y_offset in range(-30, 31, 10):
-                if is_light_grey_or_white(pixel(f_box_x, f_box_y + y_offset)):
                     return True, False
 
             return False, False

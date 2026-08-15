@@ -6,6 +6,17 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.6] - 2026-08-15
+
+### 🌟 Penyempurnaan Robust UI Detection (Elemen UI Permanen)
+- **Deteksi Bar Kontrol Dialog Kiri Atas Multi-Icon**:
+  - Menambahkan pemindaian icon permanen Log Dialog (`≡`), Sembunyikan UI (`👁️`), dan Audio (`🔊`) di `X ≈ 140, 180, 218; Y ≈ 45` yang selalu ada berwarna putih pada setiap percakapan normal.
+- **Deteksi Rentang Vertikal Pilihan Dialog Kanan (1, 2, atau 3 Pilihan)**:
+  - Memindai area gelembung chat `💬` (`X ≈ 1285`) dan kotak `[F]` (`X ≈ 1235`) pada rentang vertikal `Y = 710 s.d 830` piksel.
+  - Memastikan kondisi **1 pilihan dialog** (`Y ≈ 750`), **2 pilihan**, maupun **3 pilihan** terdeteksi secara presisi.
+- **Koreksi Koordinat Nama Pembicara & Garis Emas Bawah**:
+  - Mengoreksi posisi nama pembicara (`CHAR_NAME_Y`) ke `Y ≈ 810` dan garis pembatas emas (`GOLDEN_DIVIDER_Y = 835`).
+
 ## [2.1.5] - 2026-08-13
 
 ### 🌟 Fitur Baru — Deteksi Multi-Indikator Dialog Karakter
