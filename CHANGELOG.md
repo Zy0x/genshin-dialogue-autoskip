@@ -6,6 +6,15 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.10] - 2026-08-16
+
+### 🛡️ Peningkatan Menu Shield (Pengaturan Party & Menu Action Buttons Protection)
+- **Multi-Point Scan Tombol Tutup `[X]` Kanan Atas**:
+  - Memindai rentang horizontal `X = 1830 s.d 1875` pada `Y ≈ 45` untuk menjamin deteksi tombol Tutup `[X]` pada layar Pengaturan Party (*Party Setup*), Domain, Inventori, Karakter, dan Event.
+- **Deteksi Tombol Aksi Menu Pojok Kanan Bawah (`X ≈ 1750, Y ≈ 950`)**:
+  - Mendeteksi keberadaan tombol menu bawah seperti `[F] Mulai`, `[F] Solo`, dan `[F] Konfirmasi Simpan`.
+  - Mencegah penekanan tombol `F` otomatis saat berada di layar Pengaturan Party sehingga pemain bebas mengatur komposisi tim tanpa tertekan *"Mulai"*.
+
 ## [2.1.9] - 2026-08-16
 
 ### 🛡️ Dual Master Safety Shield (Eksplorasi Open-World & Menu Domain Protection)

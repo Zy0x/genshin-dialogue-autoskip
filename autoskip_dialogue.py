@@ -16,7 +16,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.9 | Keyboard & Mouse Edition")
+print("  Version 2.1.10 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -275,13 +275,32 @@ def is_open_world_hud_active() -> bool:
 
 def is_menu_screen_active() -> bool:
     """
-    Check if a Menu, Domain Entrance, Inventory, or Storage screen is open (Close [X] button visible).
-    During story dialogues and cutscenes, the Close [X] button NEVER exists.
+    Check if a Menu, Party Setup, Domain Entrance, Inventory, Character, or Storage screen is open.
+    During story dialogues and cutscenes, these menu elements NEVER exist.
     """
     try:
-        close_x = get_pixel(DEVICE, res, "MENU_CLOSE_X")
-        close_y = get_pixel(DEVICE, res, "MENU_CLOSE_Y")
-        return is_light_grey_or_white(pixel(close_x, close_y))
+        # 1. Multi-point scan for Close [X] button at top-right corner (X ≈ 1830 to 1880, Y ≈ 45)
+        #    Covers Party Setup, Domain, Inventory, Wish, Character, Event, and Settings screens
+        close_y = height_adjust(45)
+        close_x_points = [
+            width_adjust(1830),
+            width_adjust(1845),
+            width_adjust(1860),
+            width_adjust(1875)
+        ]
+        for c_x in close_x_points:
+            if is_light_grey_or_white(pixel(c_x, close_y)):
+                return True
+
+        # 2. Check Bottom-Right menu action button bar (e.g. "[F] Mulai", "[F] Solo", "[F] Konfirmasi")
+        #    In menus, action buttons are placed at Y ≈ 950 (X ≈ 1700 - 1800) with solid light background.
+        #    In dialogues, dialogue choices are strictly at X ≈ 1235 - 1285 (Y ≈ 710 - 830).
+        menu_btn_x = width_adjust(1750)
+        menu_btn_y = height_adjust(950)
+        if is_light_grey_or_white(pixel(menu_btn_x, menu_btn_y)):
+            return True
+
+        return False
     except Exception:
         return False
 
