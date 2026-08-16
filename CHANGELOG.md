@@ -6,6 +6,16 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.9] - 2026-08-16
+
+### 🛡️ Dual Master Safety Shield (Eksplorasi Open-World & Menu Domain Protection)
+- **Shield 1: Open-World Exploration Immunity (`is_open_world_hud_active`)**:
+  - Mendeteksi keberadaan HUD dunia terbuka (Minimap, icon Tas/Wish di kanan atas, dan slot Party 1-2-3-4 di kanan).
+  - Menghentikan total penekanan tombol `F` saat pemain sedang bebas menjelajah dunia terbuka, mencegah interaksi tidak sengaja dengan pintu domain liar (*"Binding Field..."*), peti, atau NPC.
+- **Shield 2: Menu / Domain Entrance Protection (`is_menu_screen_active`)**:
+  - Mendeteksi tombol Tutup `[X]` di pojok kanan atas (`X ≈ 1840, Y ≈ 45`) pada menu Pintu Domain, inventori, dan event.
+  - Menjamin pemain bebas memilih tingkat kesulitan domain, mode Co-Op/Solo, dan melihat hadiah tanpa terganggu auto-skip.
+
 ## [2.1.8] - 2026-08-15
 
 ### 🛡️ Anti-False Positive Shield (Menu/Inventori/Modal Popup Protection)

@@ -16,7 +16,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.8 | Keyboard & Mouse Edition")
+print("  Version 2.1.9 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -49,7 +49,17 @@ COORDS = {
             "GOLDEN_DIVIDER_Y": ("height_adjust", 835),
 
             # Bottom-Center Yellow Diamond Indicator (Cutscenes & Narrations)
-            "YELLOW_INDICATOR_X": ("width_adjust", 960)
+            "YELLOW_INDICATOR_X": ("width_adjust", 960),
+
+            # Open-World Exploration HUD Shields (Bag icon, Party member slot 1)
+            "OPEN_WORLD_BAG_ICON_X": ("width_adjust", 1780),
+            "OPEN_WORLD_BAG_ICON_Y": ("height_adjust", 45),
+            "OPEN_WORLD_PARTY1_X": ("width_adjust", 1870),
+            "OPEN_WORLD_PARTY1_Y": ("height_adjust", 255),
+
+            # Menu / Domain Entrance / Inventory Close [X] Shield
+            "MENU_CLOSE_X": ("width_adjust", 1840),
+            "MENU_CLOSE_Y": ("height_adjust", 45)
         },
         "wide_screen": {
             "PLAYING_ICON_X": ("get_position_left", 84, 230),
@@ -240,6 +250,42 @@ def is_valid_dialogue_choice(choice_x: int, y_pt: int) -> bool:
         return False
 
 
+def is_open_world_hud_active() -> bool:
+    """
+    Check if Open-World exploration HUD is visible (Party members, Bag/Wish icons).
+    During story dialogues and cutscenes, all Open-World HUD elements are 100% hidden.
+    """
+    try:
+        # 1. Check Top-Right Open-World Main HUD (Bag icon)
+        bag_x = get_pixel(DEVICE, res, "OPEN_WORLD_BAG_ICON_X")
+        bag_y = get_pixel(DEVICE, res, "OPEN_WORLD_BAG_ICON_Y")
+        if is_light_grey_or_white(pixel(bag_x, bag_y)):
+            return True
+
+        # 2. Check Right-Side Party Member 1 Slot box
+        party_x = get_pixel(DEVICE, res, "OPEN_WORLD_PARTY1_X")
+        party_y = get_pixel(DEVICE, res, "OPEN_WORLD_PARTY1_Y")
+        if is_light_grey_or_white(pixel(party_x, party_y)):
+            return True
+
+        return False
+    except Exception:
+        return False
+
+
+def is_menu_screen_active() -> bool:
+    """
+    Check if a Menu, Domain Entrance, Inventory, or Storage screen is open (Close [X] button visible).
+    During story dialogues and cutscenes, the Close [X] button NEVER exists.
+    """
+    try:
+        close_x = get_pixel(DEVICE, res, "MENU_CLOSE_X")
+        close_y = get_pixel(DEVICE, res, "MENU_CLOSE_Y")
+        return is_light_grey_or_white(pixel(close_x, close_y))
+    except Exception:
+        return False
+
+
 def should_take_break() -> bool:
     """
     Determine if we should take an occasional break.
@@ -329,7 +375,17 @@ def main() -> None:
             if pixel(get_pixel(DEVICE, res, "LOADING_SCREEN_X"), get_pixel(DEVICE, res, "LOADING_SCREEN_Y")) == (255, 255, 255):
                 return False, False
 
-            # 2. Check Right-Side Dialogue Choice Options (Speech bubble 💬 & [F] box)
+            # 2. Master Shield 1: If Open-World exploration HUD is visible -> NEVER auto-skip!
+            #    (Protects against accidental interaction with Domain doors, chests, NPCs while exploring)
+            if is_open_world_hud_active():
+                return False, False
+
+            # 3. Master Shield 2: If Menu / Domain Entrance / Inventory screen is open -> NEVER auto-skip!
+            #    (Protects Domain menus, inventory, cooking, character screens with Close [X] button)
+            if is_menu_screen_active():
+                return False, False
+
+            # 4. Check Right-Side Dialogue Choice Options (Speech bubble 💬 & [F] box)
             #    Scans vertical range with Dark Pill Contrast Check to reject modal/menu popups
             choice_x = get_pixel(DEVICE, res, "DIALOGUE_CHOICE_X")
             f_box_x = get_pixel(DEVICE, res, "DIALOGUE_F_BOX_X")
