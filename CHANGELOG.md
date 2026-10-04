@@ -6,6 +6,18 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.13] - 2026-10-04
+
+### 💬 Deteksi Komprehensif Opsi Dialog Majemuk & Peningkatan Akurasi Pilihan
+- **Deteksi Fleksibel Multi-Opsi Dialog (*Speech Bubble & [F] Prompt Recognition*)**:
+  - Memperbarui algoritma verifikasi opsi dialog `is_valid_dialogue_choice(y_pt)` untuk mendukung skenario percakapan dengan 1, 2, hingga 3 pilihan dialog sekaligus.
+  - Memvalidasi keberadaan icon gelembung percakapan (`💬` di `X ≈ 1295`) dan kotak interaksi `[F]` (`X ≈ 1228`) yang independen, sehingga opsi pilihan yang tidak memiliki indikator `[F]` (opsi kedua/ketiga yang belum difokuskan) tetap terdeteksi 100% akurat.
+- **Pembersihan Konflik Teks Putih & Peningkatan Batas Kontras**:
+  - Menghilangkan titik uji di dalam teks kalimat pilihan dialog (`X ≈ 1370`) yang sebelumnya menimbulkan kegagalan deteksi akibat benturan warna teks putih pada dialog karakter tertentu (seperti kasus Alyosha).
+  - Menerapkan verifikasi batas gelap ganda (`X ≈ 1250` dan `X ≈ 1280`) untuk memastikan kekebalan total terhadap salah deteksi gaun putih karakter atau latar belakang salju/alam terbuka.
+- **Perluasan Titik Pemindaian Vertikal Pilihan Dialog**:
+  - Memperluas larik koordinat vertikal pilihan dialog di `get_dialogue_state()` (`Y = 660, 710, 725, 735, 750, 770, 790, 805, 808, 830`) guna mencakup seluruh variasi tata letak pilihan dialog di berbagai resolusi layar.
+
 ## [2.1.12] - 2026-10-04
 
 ### ⌨️ Penekanan DirectInput Hardware Scan Code & Eliminasi False Positive Opsi Dialog

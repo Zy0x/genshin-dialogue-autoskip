@@ -89,7 +89,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.12 | Keyboard & Mouse Edition")
+print("  Version 2.1.13 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -305,27 +305,22 @@ def is_light_grey_or_white(color: tuple[int, int, int]) -> bool:
 def is_valid_dialogue_choice(y_pt: int) -> bool:
     """
     Validates that a true dialogue choice option exists at vertical level y_pt.
+    Handles 1-choice, 2-choice, and 3-choice scenarios.
     Checks:
-      1. Standalone [F] box at X ≈ 1228 is light-grey/white.
-      2. Gap between [F] box and dialogue pill at X ≈ 1252 is NOT continuous solid white
-         (eliminates false positives from characters wearing white clothing in the background).
-      3. Body of dialogue choice pill at X ≈ 1370 is dark translucent (RGB < 140)
-         (eliminates false positives from light-colored modal popups or inventories).
+      1. Speech bubble icon (X ≈ 1295) OR [F] box (X ≈ 1228) must be light-grey/white.
+      2. Outer boundary at X ≈ 1250 OR pill body at X ≈ 1280 must be dark (max(RGB) <= 160)
+         (eliminates false positives from characters wearing white clothing or bright scenery).
     """
     try:
-        # 1. [F] box check at X ≈ 1228
-        p_fbox = pixel(width_adjust(1228), y_pt)
-        if not is_light_grey_or_white(p_fbox):
-            return False
+        p_bubble = pixel(width_adjust(1295), y_pt)
+        if not is_light_grey_or_white(p_bubble):
+            p_fbox = pixel(width_adjust(1228), y_pt)
+            if not is_light_grey_or_white(p_fbox):
+                return False
 
-        # 2. Gap between [F] box and pill at X ≈ 1252 (must not be continuous white dress)
-        p_gap = pixel(width_adjust(1252), y_pt)
-        if p_gap[0] > 170 and p_gap[1] > 170 and p_gap[2] > 170:
-            return False
-
-        # 3. Inside pill background at X ≈ 1370 (must be dark translucent pill background)
-        p_pill = pixel(width_adjust(1370), y_pt)
-        if p_pill[0] > 140 and p_pill[1] > 140 and p_pill[2] > 140:
+        p_gap = pixel(width_adjust(1250), y_pt)
+        p_pill_left = pixel(width_adjust(1280), y_pt)
+        if max(p_gap) > 160 and max(p_pill_left) > 160:
             return False
 
         return True
@@ -532,11 +527,14 @@ def main() -> None:
             # 4. Check Right-Side Dialogue Choice Options (Speech bubble 💬 & [F] box)
             #    Scans vertical range with 3-Point Pill Contrast Check to reject modal/menu popups & background clothes
             choice_y_points = [
+                height_adjust(660),
                 height_adjust(710),
+                height_adjust(725),
                 height_adjust(735),
                 height_adjust(750),
                 height_adjust(770),
                 height_adjust(790),
+                height_adjust(805),
                 height_adjust(808),
                 height_adjust(830)
             ]
