@@ -1,6 +1,6 @@
 [project]
 name = "genshin-dialogue-autoskip-main"
-version = "2.1.10"
+version = "2.1.11"
 requires-python = ">=3.11"
 dependencies = [
     "pyautogui==0.9.54",

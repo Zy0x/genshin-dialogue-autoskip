@@ -16,7 +16,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.10 | Keyboard & Mouse Edition")
+print("  Version 2.1.11 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -32,6 +32,8 @@ COORDS = {
             # Top-Left Permanent Dialogue Control Bar (Log, Hide UI, Audio, Autoplay)
             "PLAYING_ICON_X": ("width_adjust", 84),
             "PLAYING_ICON_Y": ("height_adjust", 46),
+            "PLAYING_TRIANGLE_X": ("width_adjust", 38),
+            "PLAYING_TRIANGLE_Y": ("height_adjust", 45),
             "LOG_ICON_X": ("width_adjust", 140),
             "LOG_ICON_Y": ("height_adjust", 45),
             "HIDE_UI_ICON_X": ("width_adjust", 180),
@@ -45,11 +47,12 @@ COORDS = {
 
             # Bottom Dialogue Name & Golden Divider
             "CHAR_NAME_X": ("width_adjust", 960),
-            "CHAR_NAME_Y": ("height_adjust", 810),
-            "GOLDEN_DIVIDER_Y": ("height_adjust", 835),
+            "CHAR_NAME_Y": ("height_adjust", 865),
+            "GOLDEN_DIVIDER_Y": ("height_adjust", 890),
 
-            # Bottom-Center Yellow Diamond Indicator (Cutscenes & Narrations)
+            # Bottom-Center Yellow Diamond Indicator (Cutscenes, Narrations & Dialogue Box)
             "YELLOW_INDICATOR_X": ("width_adjust", 960),
+            "YELLOW_INDICATOR_Y": ("height_adjust", 1048),
 
             # Open-World Exploration HUD Shields (Bag icon, Party member slot 1)
             "OPEN_WORLD_BAG_ICON_X": ("width_adjust", 1780),
@@ -59,7 +62,9 @@ COORDS = {
 
             # Menu / Domain Entrance / Inventory Close [X] Shield
             "MENU_CLOSE_X": ("width_adjust", 1840),
-            "MENU_CLOSE_Y": ("height_adjust", 45)
+            "MENU_CLOSE_Y": ("height_adjust", 45),
+            "MENU_BTN_X": ("width_adjust", 1750),
+            "MENU_BTN_Y": ("height_adjust", 950)
         },
         "wide_screen": {
             "PLAYING_ICON_X": ("get_position_left", 84, 230),
@@ -273,19 +278,61 @@ def is_open_world_hud_active() -> bool:
         return False
 
 
+def is_dialogue_control_bar_active() -> bool:
+    """
+    Check if the permanent top-left dialogue control bar is visible.
+    Icons:
+      - Log / History (≡) at X ≈ 140, Y ≈ 45
+      - Hide UI (👁️) at X ≈ 180, Y ≈ 45
+      - Autoplay (Play triangle / text) at X ≈ 38-84, Y ≈ 45-46
+    These icons ONLY exist during dialogues and cutscenes, and NEVER exist in Open World or Menus.
+    """
+    try:
+        log_x = get_pixel(DEVICE, res, "LOG_ICON_X")
+        log_y = get_pixel(DEVICE, res, "LOG_ICON_Y")
+        hide_x = get_pixel(DEVICE, res, "HIDE_UI_ICON_X")
+        hide_y = get_pixel(DEVICE, res, "HIDE_UI_ICON_Y")
+
+        if is_light_grey_or_white(pixel(log_x, log_y)) or is_light_grey_or_white(pixel(hide_x, hide_y)):
+            return True
+
+        # Check play triangle icon (top-left)
+        play_tri_x = get_pixel(DEVICE, res, "PLAYING_TRIANGLE_X")
+        play_tri_y = get_pixel(DEVICE, res, "PLAYING_TRIANGLE_Y")
+        if is_light_grey_or_white(pixel(play_tri_x, play_tri_y)):
+            return True
+
+        # Check autoplay indicator pixel with tolerance
+        playing_x = get_pixel(DEVICE, res, "PLAYING_ICON_X")
+        playing_y = get_pixel(DEVICE, res, "PLAYING_ICON_Y")
+        p_col = pixel(playing_x, playing_y)
+        if abs(int(p_col[0]) - 236) <= 15 and abs(int(p_col[1]) - 229) <= 15 and abs(int(p_col[2]) - 216) <= 15:
+            return True
+
+        return False
+    except Exception:
+        return False
+
+
 def is_menu_screen_active() -> bool:
     """
     Check if a Menu, Party Setup, Domain Entrance, Inventory, Character, or Storage screen is open.
     During story dialogues and cutscenes, these menu elements NEVER exist.
+    IMPORTANT: If the dialogue control bar is active, we are guaranteed to be in dialogue and NOT a menu!
+    In story dialogues, a search/history magnifying glass icon sits at (X ≈ 1860, Y ≈ 45).
     """
     try:
+        # If top-left dialogue control bar is active, this is DEFINITELY dialogue, NEVER a menu!
+        if is_dialogue_control_bar_active():
+            return False
+
         # 1. Multi-point scan for Close [X] button at top-right corner (X ≈ 1830 to 1880, Y ≈ 45)
-        #    Covers Party Setup, Domain, Inventory, Wish, Character, Event, and Settings screens
+        #    Covers Party Setup, Domain, Inventory, Wish, Character, Event, and Settings screens.
+        #    Note: X ≈ 1860 is deliberately excluded to avoid false positives with dialogue search icon.
         close_y = height_adjust(45)
         close_x_points = [
             width_adjust(1830),
             width_adjust(1845),
-            width_adjust(1860),
             width_adjust(1875)
         ]
         for c_x in close_x_points:
@@ -295,8 +342,8 @@ def is_menu_screen_active() -> bool:
         # 2. Check Bottom-Right menu action button bar (e.g. "[F] Mulai", "[F] Solo", "[F] Konfirmasi")
         #    In menus, action buttons are placed at Y ≈ 950 (X ≈ 1700 - 1800) with solid light background.
         #    In dialogues, dialogue choices are strictly at X ≈ 1235 - 1285 (Y ≈ 710 - 830).
-        menu_btn_x = width_adjust(1750)
-        menu_btn_y = height_adjust(950)
+        menu_btn_x = get_pixel(DEVICE, res, "MENU_BTN_X")
+        menu_btn_y = get_pixel(DEVICE, res, "MENU_BTN_Y")
         if is_light_grey_or_white(pixel(menu_btn_x, menu_btn_y)):
             return True
 
@@ -421,41 +468,35 @@ def main() -> None:
                 if is_valid_dialogue_choice(choice_x, y_pt) or is_valid_dialogue_choice(f_box_x, y_pt):
                     return True, True
 
-            # 3. Check Top-Left Permanent Dialogue Control Bar Icons (Log ≡, Hide UI 👁️, Audio 🔊, Autoplay)
-            log_x = get_pixel(DEVICE, res, "LOG_ICON_X")
-            log_y = get_pixel(DEVICE, res, "LOG_ICON_Y")
-            hide_x = get_pixel(DEVICE, res, "HIDE_UI_ICON_X")
-            hide_y = get_pixel(DEVICE, res, "HIDE_UI_ICON_Y")
-            audio_x = get_pixel(DEVICE, res, "AUDIO_ICON_X")
-            audio_y = get_pixel(DEVICE, res, "AUDIO_ICON_Y")
-            playing_x = get_pixel(DEVICE, res, "PLAYING_ICON_X")
-            playing_y = get_pixel(DEVICE, res, "PLAYING_ICON_Y")
-
-            if is_light_grey_or_white(pixel(log_x, log_y)) or is_light_grey_or_white(pixel(hide_x, hide_y)) or is_light_grey_or_white(pixel(audio_x, audio_y)):
-                return True, False
-            if pixel(playing_x, playing_y) == (236, 229, 216):
+            # 5. Check Top-Left Permanent Dialogue Control Bar Icons (Log ≡, Hide UI 👁️, Audio 🔊, Autoplay)
+            if is_dialogue_control_bar_active():
                 return True, False
 
-            # 4. Check Bottom Character Name & Golden Divider Line (Y ≈ 810 - 835)
+            # 6. Check Bottom Character Name & Golden Divider Line (Y ≈ 850 - 890)
             char_name_x = get_pixel(DEVICE, res, "CHAR_NAME_X")
             char_name_y = get_pixel(DEVICE, res, "CHAR_NAME_Y")
             divider_y = get_pixel(DEVICE, res, "GOLDEN_DIVIDER_Y")
-            for x_offset in range(-60, 61, 20):
-                if is_yellow_color(pixel(char_name_x + x_offset, char_name_y)) or is_yellow_color(pixel(char_name_x + x_offset, divider_y)):
+            for x_offset in range(-80, 81, 20):
+                for y_offset in (-15, 0, 10):
+                    if is_yellow_color(pixel(char_name_x + x_offset, char_name_y + height_adjust(y_offset))):
+                        return True, False
+                if is_yellow_color(pixel(char_name_x + x_offset, divider_y)):
                     return True, False
 
-            # 5. Check Yellow Diamond Symbol ('◇' / '◆') at bottom-center (Cutscenes & Narrations)
+            # 7. Check Yellow Diamond Symbol ('◇' / '◆') at bottom-center (Cutscenes, Narrations & Dialogue Box)
             center_x = get_pixel(DEVICE, res, "YELLOW_INDICATOR_X")
             y_scan_points = [
-                height_adjust(910),
                 height_adjust(925),
                 height_adjust(940),
-                height_adjust(950),
-                height_adjust(960)
+                height_adjust(955),
+                height_adjust(1048),
+                height_adjust(1050),
+                height_adjust(1052)
             ]
             for y_pt in y_scan_points:
-                if is_yellow_color(pixel(center_x, y_pt)):
-                    return True, False
+                for x_off in (-2, 0, 2):
+                    if is_yellow_color(pixel(center_x + x_off, y_pt)):
+                        return True, False
 
             return False, False
         except Exception:
@@ -524,15 +565,16 @@ def main() -> None:
                 next_f_interval = random_f_key_interval()
                 continue
 
-        # Check if it's time to press F
+        # Check if it's time to press keys
         if current_time - last_f_press >= next_f_interval:
             try:
                 if not options_available:
-                    press("f")
+                    press("space")
+                    press(CONFIRM_BUTTON)
                 else:
                     press(CONFIRM_BUTTON)
             except Exception as e:
-                print(f"\n  Error pressing {CONFIRM_BUTTON} key: {e}")
+                print(f"\n  Error pressing keys: {e}")
 
             # Set up next F press timing
             last_f_press = current_time

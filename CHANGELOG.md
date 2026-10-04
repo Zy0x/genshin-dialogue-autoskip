@@ -6,6 +6,21 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.11] - 2026-10-04
+
+### 🛡️ Perbaikan Kritis False Positive Menu Shield & Penyempurnaan Deteksi Dialog
+- **Resolusi Konflik Icon Pencarian Riwayat Dialog (`X ≈ 1860, Y ≈ 45`)**:
+  - Memperbaiki salah deteksi pada `is_menu_screen_active()` yang menganggap icon kaca pembesar riwayat dialog di pojok kanan atas sebagai tombol Tutup `[X]` menu, yang sebelumnya melumpuhkan fungsi auto-skip pada seluruh adegan percakapan.
+  - Mengecualikan koordinat `X = 1860` dari pemindaian tombol tutup menu.
+- **Prioritas Deteksi Bar Kontrol Dialog Permanen (`is_dialogue_control_bar_active`)**:
+  - Menjadikan icon permanen kiri atas (Log `≡`, Sembunyikan UI `👁️`, dan segitiga Putar `▶`/Otomatis) sebagai jaminan validasi dialog absolut yang kebal terhadap salah deteksi menu.
+- **Koreksi Koordinat Nama Karakter & Garis Emas**:
+  - Menyesuaikan rentang posisi nama karakter ke `Y ≈ 850 s.d 875` (Surikov, Olenina, Odette) dan garis pembatas emas ke `Y ≈ 890`.
+- **Perluasan Deteksi Diamond Kuning Bawah (`Y ≈ 1048 - 1052`)**:
+  - Menambahkan titik pemindaian pada indikator diamond berkedip di bagian bawah kotak teks dialog agar percakapan monologue/cutscene terdeteksi secara responsif.
+- **Sinkronisasi Penekanan Ganda `Spacebar` + `F`**:
+  - Mengirimkan penekanan `Spacebar` dan `F` saat dialog teks berjalan untuk menyelesaikan efek ketikan teks seketika dan mempercepat perguliran dialog ke baris berikutnya.
+
 ## [2.1.10] - 2026-08-16
 
 ### 🛡️ Peningkatan Menu Shield (Pengaturan Party & Menu Action Buttons Protection)
