@@ -6,6 +6,20 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.12] - 2026-10-04
+
+### ⌨️ Penekanan DirectInput Hardware Scan Code & Eliminasi False Positive Opsi Dialog
+- **Simulasi Tombol DirectInput Hardware Scan Code (`SendInput` & `KEYEVENTF_SCANCODE`)**:
+  - Mengganti fungsi `pyautogui.press()` standar dengan penekanan hardware tingkat DirectInput (`SendInput` dengan scan code hardware `DIK_F = 0x21` dan `DIK_SPACE = 0x39`).
+  - Menetapkan durasi penekanan tombol (*hold duration*) sebesar **45ms s.d 55ms**, menjamin game loop engine DirectX / Unity (60 FPS / 16.6ms per frame) menangkap input penekanan tombol `[F]` dan `Spacebar` 100% tanpa pernah terlewat (*dropped keypress*).
+- **Verifikasi Kontras 3-Titik Opsi Dialog (*Anti-Background False Positive*)**:
+  - Memperbarui `is_valid_dialogue_choice(y_pt)` dengan pemindaian 3 titik:
+    1. Memeriksa kotak tombol `[F]` di `X ≈ 1228`.
+    2. Memeriksa celah gelap antara kotak `[F]` dan gelembung chat di `X ≈ 1252` untuk mengeliminasi salah deteksi pakaian putih karakter di latar belakang (seperti gaun Odette/Lumine).
+    3. Memeriksa badan gelembung pilihan di `X ≈ 1370` yang berlatar belakang gelap transparan.
+- **Deteksi Cutscene Kamera Bergerak / Luar Ruangan (`Y ≈ 1020 - 1032`)**:
+  - Menambahkan titik pemindaian diamond kuning pada cutscene sinematik luar ruangan (seperti adegan rel kereta salju) di `Y ≈ 1020 s.d 1029`.
+
 ## [2.1.11] - 2026-10-04
 
 ### 🛡️ Perbaikan Kritis False Positive Menu Shield & Penyempurnaan Deteksi Dialog

@@ -1,14 +1,87 @@
+import ctypes
+from ctypes import wintypes
 import os
 from random import randint, uniform
 from threading import Thread
 from time import perf_counter, sleep
 from typing import Union
 from win32api import GetSystemMetrics  # type: ignore[import-untyped]
+import win32api  # type: ignore[import-untyped]
 import win32gui  # type: ignore[import-untyped]
 
-from pyautogui import press, pixel  # type: ignore[import-untyped]
+from pyautogui import pixel  # type: ignore[import-untyped]
 from pynput.keyboard import Key, KeyCode, Listener  # type: ignore[import-untyped]
 from dotenv import find_dotenv, load_dotenv, set_key  # type: ignore[import-not-found]
+
+# DirectInput Hardware Scan Code Constants & Structures for DirectX / Unity games
+KEYEVENTF_SCANCODE = 0x0008
+KEYEVENTF_KEYUP = 0x0002
+
+class KeyBdInput(ctypes.Structure):
+    _fields_ = [
+        ("wVk", wintypes.WORD),
+        ("wScan", wintypes.WORD),
+        ("dwFlags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+    ]
+
+class HardwareInput(ctypes.Structure):
+    _fields_ = [("uMsg", wintypes.DWORD), ("wParamL", wintypes.WORD), ("wParamH", wintypes.WORD)]
+
+class MouseInput(ctypes.Structure):
+    _fields_ = [
+        ("dx", wintypes.LONG),
+        ("dy", wintypes.LONG),
+        ("mouseData", wintypes.DWORD),
+        ("dwFlags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+    ]
+
+class Input_I(ctypes.Union):
+    _fields_ = [("ki", KeyBdInput), ("mi", MouseInput), ("hi", HardwareInput)]
+
+class Input(ctypes.Structure):
+    _fields_ = [("type", wintypes.DWORD), ("ii", Input_I)]
+
+DIK_KEY_MAP = {
+    "f": 0x21,
+    "space": 0x39,
+    "enter": 0x1C,
+    "e": 0x12,
+}
+
+def get_scan_code(key_name: str) -> int:
+    k_lower = key_name.lower()
+    if k_lower in DIK_KEY_MAP:
+        return DIK_KEY_MAP[k_lower]
+    try:
+        vk = win32api.VkKeyScan(key_name[0]) & 0xFF
+        scan = win32api.MapVirtualKey(vk, 0)
+        return scan if scan > 0 else 0x21
+    except Exception:
+        return 0x21
+
+def send_hardware_key(key_name: str, duration: float = 0.045) -> None:
+    """
+    Sends a genuine hardware DirectInput scan code via Windows SendInput.
+    Holds the key down for ~45ms-55ms to ensure DirectX / Unity engine game loops
+    reliably capture the KEYDOWN event without dropping inputs.
+    """
+    try:
+        scan_code = get_scan_code(key_name)
+        extra = ctypes.c_ulong(0)
+        ii_ = Input_I()
+        ii_.ki = KeyBdInput(0, scan_code, KEYEVENTF_SCANCODE, 0, ctypes.pointer(extra))
+        x = Input(ctypes.c_ulong(1), ii_)
+        ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+        sleep(duration)
+        ii_.ki = KeyBdInput(0, scan_code, KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP, 0, ctypes.pointer(extra))
+        x = Input(ctypes.c_ulong(1), ii_)
+        ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+    except Exception as e:
+        print(f"\n  Error in send_hardware_key({key_name}): {e}")
 
 # Initial setup
 os.system("cls")
@@ -16,7 +89,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.11 | Keyboard & Mouse Edition")
+print("  Version 2.1.12 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -229,25 +302,30 @@ def is_light_grey_or_white(color: tuple[int, int, int]) -> bool:
     return bool(r >= 210 and g >= 210 and b >= 210 and abs(int(r) - int(g)) <= 20 and abs(int(g) - int(b)) <= 20)
 
 
-def is_valid_dialogue_choice(choice_x: int, y_pt: int) -> bool:
+def is_valid_dialogue_choice(y_pt: int) -> bool:
     """
-    Validates that a white pixel at choice_x is a true dialogue pill option,
-    and NOT a light-colored modal popup or menu background (Anti-False Positive).
+    Validates that a true dialogue choice option exists at vertical level y_pt.
+    Checks:
+      1. Standalone [F] box at X ≈ 1228 is light-grey/white.
+      2. Gap between [F] box and dialogue pill at X ≈ 1252 is NOT continuous solid white
+         (eliminates false positives from characters wearing white clothing in the background).
+      3. Body of dialogue choice pill at X ≈ 1370 is dark translucent (RGB < 140)
+         (eliminates false positives from light-colored modal popups or inventories).
     """
     try:
-        # 1. Check if the icon pixel is white/light-grey
-        icon_pixel = pixel(choice_x, y_pt)
-        if not is_light_grey_or_white(icon_pixel):
+        # 1. [F] box check at X ≈ 1228
+        p_fbox = pixel(width_adjust(1228), y_pt)
+        if not is_light_grey_or_white(p_fbox):
             return False
 
-        # 2. Check adjacent pill background pixel (35px to the right)
-        # In a true dialogue choice, the pill background is dark translucent (RGB < 130).
-        # In a modal popup or inventory parchment, the entire background is solid light/white (RGB > 160).
-        bg_pixel = pixel(choice_x + width_adjust(35), y_pt)
-        r, g, b = bg_pixel[0], bg_pixel[1], bg_pixel[2]
+        # 2. Gap between [F] box and pill at X ≈ 1252 (must not be continuous white dress)
+        p_gap = pixel(width_adjust(1252), y_pt)
+        if p_gap[0] > 170 and p_gap[1] > 170 and p_gap[2] > 170:
+            return False
 
-        # If the adjacent background is ALSO light/white, it is a modal/menu popup, NOT a dialogue choice!
-        if r > 160 and g > 160 and b > 160:
+        # 3. Inside pill background at X ≈ 1370 (must be dark translucent pill background)
+        p_pill = pixel(width_adjust(1370), y_pt)
+        if p_pill[0] > 140 and p_pill[1] > 140 and p_pill[2] > 140:
             return False
 
         return True
@@ -452,9 +530,7 @@ def main() -> None:
                 return False, False
 
             # 4. Check Right-Side Dialogue Choice Options (Speech bubble 💬 & [F] box)
-            #    Scans vertical range with Dark Pill Contrast Check to reject modal/menu popups
-            choice_x = get_pixel(DEVICE, res, "DIALOGUE_CHOICE_X")
-            f_box_x = get_pixel(DEVICE, res, "DIALOGUE_F_BOX_X")
+            #    Scans vertical range with 3-Point Pill Contrast Check to reject modal/menu popups & background clothes
             choice_y_points = [
                 height_adjust(710),
                 height_adjust(735),
@@ -465,7 +541,7 @@ def main() -> None:
                 height_adjust(830)
             ]
             for y_pt in choice_y_points:
-                if is_valid_dialogue_choice(choice_x, y_pt) or is_valid_dialogue_choice(f_box_x, y_pt):
+                if is_valid_dialogue_choice(y_pt):
                     return True, True
 
             # 5. Check Top-Left Permanent Dialogue Control Bar Icons (Log ≡, Hide UI 👁️, Audio 🔊, Autoplay)
@@ -489,12 +565,16 @@ def main() -> None:
                 height_adjust(925),
                 height_adjust(940),
                 height_adjust(955),
+                height_adjust(1020),
+                height_adjust(1023),
+                height_adjust(1026),
+                height_adjust(1029),
                 height_adjust(1048),
                 height_adjust(1050),
                 height_adjust(1052)
             ]
             for y_pt in y_scan_points:
-                for x_off in (-2, 0, 2):
+                for x_off in (-4, -2, 0, 2, 4):
                     if is_yellow_color(pixel(center_x + x_off, y_pt)):
                         return True, False
 
@@ -569,10 +649,12 @@ def main() -> None:
         if current_time - last_f_press >= next_f_interval:
             try:
                 if not options_available:
-                    press("space")
-                    press(CONFIRM_BUTTON)
+                    # In dialogue text typing or cutscenes, Spacebar finishes text and advances the scene
+                    send_hardware_key("space", duration=0.04)
+                    send_hardware_key(CONFIRM_BUTTON, duration=0.045)
                 else:
-                    press(CONFIRM_BUTTON)
+                    # When a dialogue choice [F] is present, firmly press F with DirectInput hardware scan code
+                    send_hardware_key(CONFIRM_BUTTON, duration=0.055)
             except Exception as e:
                 print(f"\n  Error pressing keys: {e}")
 
