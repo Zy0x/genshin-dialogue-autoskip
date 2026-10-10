@@ -89,7 +89,7 @@ load_dotenv()
 print("\n" + "=" * 60)
 print("  GENSHIN IMPACT - DIALOGUE AUTO-SKIPPER")
 print("=" * 60)
-print("  Version 2.1.13 | Keyboard & Mouse Edition")
+print("  Version 2.1.14 | Keyboard & Mouse Edition")
 print("=" * 60 + "\n")
 
 
@@ -425,6 +425,83 @@ def is_menu_screen_active() -> bool:
         return False
 
 
+def is_exit_door_icon(y: int) -> bool:
+    """
+    Check if the Exit Door icon ('Pergi' / 'Leave') is present at vertical level y.
+    In Genshin Impact, the Exit Door icon (a door outline with an arrow exiting right)
+    ONLY appears on interactive station / trigger place menus (Statue of The Seven, Katherine,
+    Blacksmith, Alchemy table, Cooking pot, Shops, Reputation, etc.) and NEVER in story dialogues.
+    """
+    try:
+        def is_white_px(c: tuple[int, int, int]) -> bool:
+            return bool(c[0] > 180 and c[1] > 180 and c[2] > 180)
+
+        def is_dark_px(c: tuple[int, int, int]) -> bool:
+            return bool(c[0] < 120 and c[1] < 120 and c[2] < 120)
+
+        for y_off in (-4, -2, 0, 2, 4):
+            cy = y + y_off
+            # 1. Dark outer gap at X ≈ 1250 ensures we are on a choice pill
+            if max(pixel(width_adjust(1250), cy)) > 160:
+                continue
+
+            # 2. Door right vertical frame (X ≈ 1310) has white pixels top, middle, bottom
+            frame_whites = sum(
+                1 for dy in (-10, -5, 0, 5, 10)
+                if is_white_px(pixel(width_adjust(1310), cy + height_adjust(dy)))
+            )
+            # 3. Door interior (X ≈ 1297) is hollow/dark in top and bottom halves
+            interior_darks = sum(
+                1 for dy in (-10, -8, 8, 10)
+                if is_dark_px(pixel(width_adjust(1297), cy + height_adjust(dy)))
+            )
+            # 4. Arrow through center at X ≈ 1295
+            arrow_center = is_white_px(pixel(width_adjust(1295), cy))
+            # 5. Gap between arrow tip and right frame at X ≈ 1306
+            gap_dark = is_dark_px(pixel(width_adjust(1306), cy))
+
+            if frame_whites >= 4 and interior_darks >= 3 and arrow_center and gap_dark:
+                return True
+
+        return False
+    except Exception:
+        return False
+
+
+def is_trigger_place_active() -> bool:
+    """
+    Master Safety Shield 3: Trigger Place & Interactive Station Protection.
+    Checks if the active screen is a non-story interactive trigger place (Statue of The Seven,
+    Crafting Bench, Katherine, Cooking, Blacksmith, Reputation, Shops).
+    Such stations always feature an Exit Door ('Pergi' / 'Leave') option.
+    Prevents auto-skip from pressing F or Space on trigger places.
+    """
+    try:
+        scan_y_points = [
+            height_adjust(630),
+            height_adjust(660),
+            height_adjust(710),
+            height_adjust(725),
+            height_adjust(730),
+            height_adjust(735),
+            height_adjust(750),
+            height_adjust(770),
+            height_adjust(790),
+            height_adjust(805),
+            height_adjust(808),
+            height_adjust(830),
+            height_adjust(850),
+            height_adjust(880)
+        ]
+        for y_pt in scan_y_points:
+            if is_exit_door_icon(y_pt):
+                return True
+
+        return False
+    except Exception:
+        return False
+
+
 def should_take_break() -> bool:
     """
     Determine if we should take an occasional break.
@@ -503,10 +580,13 @@ def main() -> None:
         Check dialogue state in a fast screenshot pass using PERMANENT UI elements.
         Detects:
           1. Loading Screen (Safety protection)
-          2. Right-side dialogue choice options (multi-point vertical scan covering 1, 2, 3 options)
-          3. Top-left permanent control bar (Autoplay, Log ≡, Hide UI 👁️, Audio 🔊)
-          4. Bottom character name & golden divider line (Y ≈ 810-835)
-          5. Bottom-center yellow diamond symbol (◇ / ◆, Y ≈ 910-960)
+          2. Master Shield 1: Open-World exploration HUD
+          3. Master Shield 2: Menu / Domain Entrance / Inventory screens
+          4. Master Shield 3: Trigger Place & Interactive Station menus (Statue of The Seven, Katherine, Crafting, etc.)
+          5. Right-side dialogue choice options (multi-point vertical scan covering 1, 2, 3 options)
+          6. Top-left permanent control bar (Autoplay, Log ≡, Hide UI 👁️, Audio 🔊)
+          7. Bottom character name & golden divider line (Y ≈ 850-890)
+          8. Bottom-center yellow diamond symbol (◇ / ◆, Y ≈ 910-1052)
         Returns: (dialogue_active: bool, options_available: bool)
         """
         try:
@@ -524,7 +604,13 @@ def main() -> None:
             if is_menu_screen_active():
                 return False, False
 
-            # 4. Check Right-Side Dialogue Choice Options (Speech bubble 💬 & [F] box)
+            # 4. Master Shield 3: Trigger Place & Interactive Station Protection
+            #    (Protects Statue of The Seven, Crafting Bench, Katherine, Cooking, Blacksmith, Shops, etc.
+            #     from having [F] or Space automatically pressed when opening non-story interaction menus)
+            if is_trigger_place_active():
+                return False, False
+
+            # 5. Check Right-Side Dialogue Choice Options (Speech bubble 💬 & [F] box)
             #    Scans vertical range with 3-Point Pill Contrast Check to reject modal/menu popups & background clothes
             choice_y_points = [
                 height_adjust(660),
@@ -542,11 +628,11 @@ def main() -> None:
                 if is_valid_dialogue_choice(y_pt):
                     return True, True
 
-            # 5. Check Top-Left Permanent Dialogue Control Bar Icons (Log ≡, Hide UI 👁️, Audio 🔊, Autoplay)
+            # 6. Check Top-Left Permanent Dialogue Control Bar Icons (Log ≡, Hide UI 👁️, Audio 🔊, Autoplay)
             if is_dialogue_control_bar_active():
                 return True, False
 
-            # 6. Check Bottom Character Name & Golden Divider Line (Y ≈ 850 - 890)
+            # 7. Check Bottom Character Name & Golden Divider Line (Y ≈ 850 - 890)
             char_name_x = get_pixel(DEVICE, res, "CHAR_NAME_X")
             char_name_y = get_pixel(DEVICE, res, "CHAR_NAME_Y")
             divider_y = get_pixel(DEVICE, res, "GOLDEN_DIVIDER_Y")
@@ -557,7 +643,7 @@ def main() -> None:
                 if is_yellow_color(pixel(char_name_x + x_offset, divider_y)):
                     return True, False
 
-            # 7. Check Yellow Diamond Symbol ('◇' / '◆') at bottom-center (Cutscenes, Narrations & Dialogue Box)
+            # 8. Check Yellow Diamond Symbol ('◇' / '◆') at bottom-center (Cutscenes, Narrations & Dialogue Box)
             center_x = get_pixel(DEVICE, res, "YELLOW_INDICATOR_X")
             y_scan_points = [
                 height_adjust(925),

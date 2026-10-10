@@ -10,7 +10,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/63/fe/a17c106a1f4061ce8
 
 [[package]]
 name = "genshin-dialogue-autoskip-main"
-version = "2.1.13"
+version = "2.1.14"
 source = { virtual = "." }
 dependencies = [
     { name = "pyautogui" },

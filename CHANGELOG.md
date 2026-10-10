@@ -6,6 +6,16 @@ Format versi mengikuti standar perilisan aplikasi (`x.x.x`).
 
 ---
 
+## [2.1.14] - 2026-10-10
+
+### 🛡️ Master Safety Shield 3: Proteksi Menu Interaktif Stasiun & Trigger Place
+- **Pencegahan Penekanan Tombol `F` Otomatis pada Trigger Place (`is_trigger_place_active`)**:
+  - Mengimplementasikan *Master Shield 3* untuk mendeteksi layar interaksi stasiun dunia (*interactive stations / trigger places*) seperti **Patung The Seven (*Statue of The Seven*)**, Meja Sintesis (*Crafting Bench*), Api Unggun/Memasak, Pandai Besi (*Blacksmith*), Katherine (*Adventurers' Guild*), dan Toko.
+  - Memastikan tombol `F` atau `Space` tidak akan pernah ditekan secara otomatis saat pemain membuka menu stasiun/interaksi non-cerita, mencegah terpilihnya opsi aksi sensitif (seperti *"Serahkan" / Statue Offering*) tanpa kendali sadar pemain.
+- **Deteksi Geometris Ikon Pintu Keluar (*Exit Door Recognition*)**:
+  - Membangun algoritma pemindaian `is_exit_door_icon(y)` untuk mengidentifikasi keberadaan ikon pintu keluar (`⇥` / `🚪` pada opsi *"Pergi" / "Leave"*).
+  - Karena ikon pintu keluar hanya ada pada menu interaksi stasiun dan tidak pernah muncul di dalam alur dialog cerita (*story dialogue*), metode ini memberikan proteksi presisi tinggi tanpa risiko salah tangkap (*false positive*).
+
 ## [2.1.13] - 2026-10-04
 
 ### 💬 Deteksi Komprehensif Opsi Dialog Majemuk & Peningkatan Akurasi Pilihan
